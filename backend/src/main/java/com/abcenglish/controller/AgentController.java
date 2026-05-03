@@ -25,9 +25,15 @@ public class AgentController {
 
             String response = aiService.chat(message, userId);
 
+            // Return format expected by frontend: { content: { message: "..." } }
+            Map<String, Object> content = new HashMap<>();
+            content.put("message", response);
+            content.put("examples", List.of());
+            content.put("tip", "");
+
             Map<String, Object> result = new HashMap<>();
+            result.put("content", content);
             result.put("success", true);
-            result.put("response", response);
             result.put("timestamp", System.currentTimeMillis());
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -43,18 +49,23 @@ public class AgentController {
         String answer = (String) request.get("answer");
         String question = (String) request.getOrDefault("question", "Describe your answer");
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("score", 85);
-        result.put("feedback", "Good job! Your answer is well-structured and demonstrates good understanding of the topic.");
-        result.put("suggestions", List.of(
+        Map<String, Object> content = new HashMap<>();
+        content.put("score", 85);
+        content.put("feedback", "Good job! Your answer is well-structured and demonstrates good understanding of the topic.");
+        content.put("suggestions", List.of(
             "Try to use more varied vocabulary",
             "Work on connecting your ideas more smoothly",
             "Great use of grammar!"
         ));
-        result.put("strengths", List.of(
+        content.put("strengths", List.of(
             "Clear structure",
             "Good vocabulary usage"
         ));
+        content.put("rubric", "Based on clarity, vocabulary, grammar, and relevance");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", content);
+
         return ResponseEntity.ok(result);
     }
 
@@ -63,25 +74,31 @@ public class AgentController {
         String topic = (String) request.getOrDefault("topic", "General English");
         String level = (String) request.getOrDefault("level", "BEGINNER");
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("exercises", List.of(
-            Map.of(
-                "id", 1,
-                "type", "VOCAB_QUIZ",
-                "question", "What does '" + topic + "' mean?",
-                "options", List.of("Option A", "Option B", "Option C", "Option D"),
-                "correctAnswer", 0
-            ),
-            Map.of(
-                "id", 2,
-                "type", "GRAMMAR",
-                "question", "Complete the sentence with the correct form",
-                "options", List.of("is", "are", "was", "were"),
-                "correctAnswer", 1
-            )
+        List<Map<String, Object>> questions = new ArrayList<>();
+        questions.add(Map.of(
+            "number", 1,
+            "question", "What does '" + topic + "' mean?",
+            "options", List.of("Option A", "Option B", "Option C", "Option D"),
+            "correctAnswer", "Option A",
+            "explanation", "This is the correct answer because it matches the definition."
         ));
-        result.put("topic", topic);
-        result.put("level", level);
+        questions.add(Map.of(
+            "number", 2,
+            "question", "Complete the sentence: 'The cat ___ on the table.'",
+            "options", List.of("is sitting", "sit", "sitting", "sat"),
+            "correctAnswer", "is sitting",
+            "explanation", "We use 'is + sitting' for present continuous tense."
+        ));
+
+        Map<String, Object> content = new HashMap<>();
+        content.put("questions", questions);
+        content.put("topic", topic);
+        content.put("level", level);
+        content.put("skill", "GRAMMAR");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", content);
+
         return ResponseEntity.ok(result);
     }
 
@@ -90,11 +107,11 @@ public class AgentController {
         Map<String, Object> guidance = new HashMap<>();
         Map<String, Object> content = new HashMap<>();
 
-        content.put("summary", "Bạn đang tiến bộ tốt! Hãy tập trung vào từ vựng và ngữ pháp để cải thiện điểm số.");
+        content.put("summary", "Ban dang tien bo tot! Hay tap trung vao tu vung va ngu phap de cai thien diem so.");
         content.put("recommendations", List.of(
-            "Học 10 từ vựng mới mỗi ngày",
-            "Luyện nghe 15 phút mỗi ngày",
-            "Hoàn thành bài tập ngữ pháp"
+            "Hoc 10 tu vung moi moi ngay",
+            "Luyen nghe 15 phut moi ngay",
+            "Hoan thanh bai tap ngu phap"
         ));
         content.put("nextLesson", "Unit 5: Past Tense - Talking about past events");
         content.put("strengths", List.of("Listening skill is strong", "Good vocabulary retention"));

@@ -1,25 +1,28 @@
 package com.abcenglish.service;
 
-import com.abcenglish.dto.AIChatRequest;
-import com.abcenglish.dto.AIChatResponse;
 import com.abcenglish.entity.AIChatHistory;
 import com.abcenglish.repository.AIChatHistoryRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.*;
 
 @Service
 public class AIService {
 
+    private static final Logger log = LoggerFactory.getLogger(AIService.class);
+
     private final AIChatHistoryRepository chatHistoryRepository;
 
     @Value("${groq.api.key:your_groq_api_key_here}")
     private String groqApiKey;
 
-    @Value("${groq.api.model:llama3-8b-8192}")
+    @Value("${groq.api.model:llama-3.1-8b-instant}")
     private String groqModel;
 
     private final WebClient.Builder webClientBuilder;
@@ -37,15 +40,21 @@ public class AIService {
                        "Ban co the lay API key mien phi tai https://console.groq.com/keys";
             }
 
+            log.info("Using Groq API with model: {}", groqModel);
+
             WebClient webClient = webClientBuilder.baseUrl("https://api.groq.com")
                     .defaultHeader("Authorization", "Bearer " + groqApiKey)
+                    .defaultHeader("Content-Type", "application/json")
                     .build();
 
-            List<Map<String, String>> messages = new ArrayList<Map<String, String>>();
-            messages.add(createMap("role", "system", "content",
-                    "You are an AI English tutor. Help users learn English by explaining grammar, vocabulary, and conversation. " +
-                    "Be friendly, patient, and encouraging. Respond in the same language as the user, but use English examples. " +
-                    "Keep responses concise and educational."));
+            // Build messages
+            List<Map<String, Object>> messages = new ArrayList<>();
+            messages.add(Map.of(
+                "role", "system",
+                "content", "You are an AI English tutor. Help users learn English by explaining grammar, vocabulary, and conversation. " +
+                          "Be friendly, patient, and encouraging. Respond in the same language as the user, but use English examples. " +
+                          "Keep responses concise and educational."
+            ));
 
             if (userId != null) {
                 List<AIChatHistory> history = chatHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId);
@@ -53,29 +62,33 @@ public class AIService {
                 int count = 0;
                 for (AIChatHistory chat : history) {
                     if (count >= 4) break;
-                    messages.add(createMap("role", "user", "content", chat.getUserMessage()));
+                    messages.add(Map.of("role", "user", "content", chat.getUserMessage()));
                     String resp = chat.getAiResponse();
-                    messages.add(createMap("role", "assistant", "content", resp != null ? resp : ""));
+                    messages.add(Map.of("role", "assistant", "content", resp != null ? resp : ""));
                     count++;
                 }
             }
 
-            messages.add(createMap("role", "user", "content", userMessage));
+            messages.add(Map.of("role", "user", "content", userMessage));
 
-            Map<String, Object> requestBody = new HashMap<String, Object>();
+            // Build request
+            Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", groqModel);
             requestBody.put("messages", messages);
             requestBody.put("temperature", 0.7);
             requestBody.put("max_tokens", 1024);
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = (Map<String, Object>) webClient.post()
+            log.info("Sending request to Groq API...");
+
+            Map<String, Object> response = webClient.post()
                     .uri("/openai/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
+
+            log.info("Received response from Groq API");
 
             if (response != null && response.containsKey("choices")) {
                 @SuppressWarnings("unchecked")
@@ -97,19 +110,19 @@ public class AIService {
                 }
             }
             return "Xin loi, toi khong the tra loi luc nay.";
+        } catch (WebClientResponseException e) {
+            log.error("Groq API error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return "Loi tu Groq API: " + e.getStatusCode() + " - " + e.getMessage();
         } catch (Exception e) {
+            log.error("Error in AI chat: ", e);
             String errorMsg = e.getMessage();
             if (errorMsg != null && errorMsg.contains("401")) {
                 return "Loi xac thuc AI. Vui long kiem tra GROQ_API_KEY trong cau hinh.";
             }
-            return "Da xay ra loi: " + e.getMessage();
+            if (errorMsg != null && errorMsg.contains("400")) {
+                return "Loi cu phap request. Vui long thu lai.";
+            }
+            return "Da xay ra loi: " + errorMsg;
         }
-    }
-
-    private Map<String, String> createMap(String k1, String v1, String k2, String v2) {
-        Map<String, String> m = new HashMap<String, String>();
-        m.put(k1, v1);
-        m.put(k2, v2);
-        return m;
     }
 }
