@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './App.css';
 
@@ -71,6 +71,31 @@ function AuthProvider({ children }) {
 
 const useAuth = () => useContext(AuthContext);
 
+// Import pages from pages folder
+import LandingPage from './pages/LandingPage';
+import CoursesPage from './pages/CoursesPage';
+import CourseDetailPage from './pages/CourseDetailPage';
+import VocabularyPage from './pages/VocabularyPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import DashboardPage from './pages/DashboardPage';
+import ExercisesPage from './pages/ExercisesPage';
+import ForumPage from './pages/ForumPage';
+import GamificationPage from './pages/GamificationPage';
+import ListeningPage from './pages/ListeningPage';
+import SpeakingPage from './pages/SpeakingPage';
+import MentorPage from './pages/MentorPage';
+import ProgressPage from './pages/ProgressPage';
+import PlacementTestPage from './pages/PlacementTestPage';
+import TeacherDashboardPage from './pages/TeacherDashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import LearningPathPage from './pages/LearningPathPage';
+import LearningAnalyticsPage from './pages/LearningAnalyticsPage';
+import RecommendationPage from './pages/RecommendationPage';
+import DailyChallengePage from './pages/DailyChallengePage';
+import AgentPage from './pages/AgentPage';
+
 // ============== NAVBAR ==============
 function Navbar() {
   const { user, logout } = useAuth();
@@ -90,9 +115,11 @@ function Navbar() {
         <Link to="/">Home</Link>
         <Link to="/courses">Courses</Link>
         <Link to="/vocabulary">Vocabulary</Link>
-        <Link to="/ai-tutor">AI Tutor</Link>
+        <Link to="/agent">AI Agent</Link>
         {user ? (
           <>
+            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/daily-challenge">Daily Challenge</Link>
             <span className="user-greeting">Hello, {user.username}</span>
             <button onClick={handleLogout} className="btn btn-outline">Logout</button>
           </>
@@ -104,463 +131,6 @@ function Navbar() {
         )}
       </div>
     </nav>
-  );
-}
-
-// ============== HOME PAGE ==============
-function HomePage() {
-  const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
-  const [featured, setFeatured] = useState([]);
-
-  useEffect(() => {
-    axios.get(`${API_URL}/courses`).then(res => setCourses(res.data)).catch(() => {});
-    axios.get(`${API_URL}/courses/featured`).then(res => setFeatured(res.data)).catch(() => {});
-  }, []);
-
-  return (
-    <div className="home-page">
-      <section className="hero">
-        <div className="hero-content">
-          <h1>Master English with AI</h1>
-          <p>Learn English online with AI-powered tutoring, interactive courses, and vocabulary building tools.</p>
-          {user ? (
-            <Link to="/courses" className="btn btn-primary btn-lg">Continue Learning</Link>
-          ) : (
-            <Link to="/register" className="btn btn-primary btn-lg">Start Free Today</Link>
-          )}
-        </div>
-      </section>
-
-      {featured.length > 0 && (
-        <section className="featured-section">
-          <h2>Featured Courses</h2>
-          <div className="course-grid">
-            {featured.map(course => (
-              <div key={course.id} className="course-card">
-                <div className="course-thumb">{course.title.charAt(0)}</div>
-                <div className="course-info">
-                  <h3>{course.title}</h3>
-                  <p>{course.description?.substring(0, 80)}...</p>
-                  <div className="course-meta">
-                    <span>Level: {course.level}</span>
-                    <span>{course.totalLessons} Lessons</span>
-                    <span>Rating: {course.rating}/5</span>
-                  </div>
-                  <Link to={`/courses/${course.id}`} className="btn btn-outline btn-sm">View Course</Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="features-section">
-        <h2>Why Learn with ABC English?</h2>
-        <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-icon">AI</div>
-            <h3>AI-Powered Tutor</h3>
-            <p>Get instant help from our AI tutor available 24/7. Ask questions and get personalized explanations.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">C</div>
-            <h3>Structured Courses</h3>
-            <p>Learn from beginner to advanced with carefully designed courses for all levels.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">V</div>
-            <h3>Vocabulary Building</h3>
-            <p>Expand your vocabulary with our curated word lists and spaced repetition system.</p>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-// ============== COURSES PAGE ==============
-function CoursesPage() {
-  const [courses, setCourses] = useState([]);
-  const [filter, setFilter] = useState('ALL');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    const url = filter === 'ALL' ? `${API_URL}/courses` : `${API_URL}/courses/level/${filter}`;
-    axios.get(url).then(res => setCourses(res.data)).finally(() => setLoading(false));
-  }, [filter]);
-
-  return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1>All Courses</h1>
-        <div className="filter-tabs">
-          {['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lvl => (
-            <button
-              key={lvl}
-              className={`filter-tab ${filter === lvl ? 'active' : ''}`}
-              onClick={() => setFilter(lvl)}
-            >
-              {lvl === 'ALL' ? 'All Levels' : `Level ${lvl}`}
-            </button>
-          ))}
-        </div>
-      </div>
-      {loading ? (
-        <div className="loading">Loading courses...</div>
-      ) : (
-        <div className="course-grid">
-          {courses.length === 0 ? (
-            <p className="empty-state">No courses found for this level.</p>
-          ) : (
-            courses.map(course => (
-              <div key={course.id} className="course-card">
-                <div className="course-thumb">{course.title.charAt(0)}</div>
-                <div className="course-info">
-                  <h3>{course.title}</h3>
-                  <p>{course.description?.substring(0, 100)}...</p>
-                  <div className="course-meta">
-                    <span>Level: {course.level}</span>
-                    <span>{course.totalLessons} Lessons</span>
-                    <span>Rating: {course.rating}/5</span>
-                  </div>
-                  <Link to={`/courses/${course.id}`} className="btn btn-primary btn-sm">Start Learning</Link>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============== COURSE DETAIL PAGE ==============
-function CourseDetailPage() {
-  const { id } = React.useParams();
-  const { user } = useAuth();
-  const [course, setCourse] = useState(null);
-  const [lessons, setLessons] = useState([]);
-
-  useEffect(() => {
-    axios.get(`${API_URL}/courses/${id}`).then(res => setCourse(res.data)).catch(() => {});
-    axios.get(`${API_URL}/courses/${id}/lessons`).then(res => setLessons(res.data)).catch(() => {});
-  }, [id]);
-
-  if (!course) return <div className="loading">Loading...</div>;
-
-  return (
-    <div className="page-container">
-      <div className="course-detail">
-        <div className="course-detail-header">
-          <div className="course-detail-thumb">{course.title.charAt(0)}</div>
-          <div>
-            <h1>{course.title}</h1>
-            <p className="course-detail-desc">{course.description}</p>
-            <div className="course-meta">
-              <span>Instructor: {course.instructor}</span>
-              <span>Level: {course.level}</span>
-              <span>{course.totalLessons} Lessons</span>
-              <span>Rating: {course.rating}/5</span>
-              <span>{course.enrolledCount} Students</span>
-            </div>
-            <button className="btn btn-primary btn-lg" style={{ marginTop: '1rem' }}>
-              Enroll Now
-            </button>
-          </div>
-        </div>
-
-        <div className="lessons-list">
-          <h2>Course Lessons</h2>
-          {lessons.length === 0 ? (
-            <p className="empty-state">No lessons available yet.</p>
-          ) : (
-            lessons.map((lesson, index) => (
-              <div key={lesson.id} className="lesson-item">
-                <span className="lesson-number">{index + 1}</span>
-                <div className="lesson-info">
-                  <h4>{lesson.title}</h4>
-                  <span>{lesson.durationMinutes} min</span>
-                </div>
-                <button className="btn btn-outline btn-sm">Start</button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============== VOCABULARY PAGE ==============
-function VocabularyPage() {
-  const [vocab, setVocab] = useState([]);
-  const [filter, setFilter] = useState('ALL');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    const url = filter === 'ALL' ? `${API_URL}/vocabulary` : `${API_URL}/vocabulary?level=${filter}`;
-    axios.get(url).then(res => setVocab(res.data)).finally(() => setLoading(false));
-  }, [filter]);
-
-  return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1>Vocabulary</h1>
-        <div className="filter-tabs">
-          {['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lvl => (
-            <button
-              key={lvl}
-              className={`filter-tab ${filter === lvl ? 'active' : ''}`}
-              onClick={() => setFilter(lvl)}
-            >
-              {lvl === 'ALL' ? 'All Levels' : `Level ${lvl}`}
-            </button>
-          ))}
-        </div>
-      </div>
-      {loading ? (
-        <div className="loading">Loading vocabulary...</div>
-      ) : (
-        <div className="vocab-grid">
-          {vocab.length === 0 ? (
-            <p className="empty-state">No vocabulary found.</p>
-          ) : (
-            vocab.map(word => (
-              <div key={word.id} className="vocab-card">
-                <div className="vocab-word">{word.word}</div>
-                <div className="vocab-pronunciation">{word.pronunciation}</div>
-                <div className="vocab-translation">{word.translation}</div>
-                <div className="vocab-definition">{word.definition}</div>
-                {word.example && (
-                  <div className="vocab-example">
-                    <em>"{word.example}"</em>
-                    <small>{word.exampleTranslation}</small>
-                  </div>
-                )}
-                <div className="vocab-meta">
-                  <span className="badge">{word.level}</span>
-                  <span className="badge badge-secondary">{word.category}</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============== AI TUTOR PAGE ==============
-function AITutorPage() {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      axios.get(`${API_URL}/ai/history`, { params: { userId: user.userId } })
-        .then(res => setMessages(res.data.map(h => ({
-          role: 'assistant',
-          content: h.aiResponse,
-          isHistory: true
-        }))).catch(() => {});
-    }
-  }, [user]);
-
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = input;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setLoading(true);
-
-    try {
-      const res = await axios.post(`${API_URL}/ai/chat`, {
-        message: userMsg,
-        conversationContext: ''
-      }, { params: { userId: user?.userId } });
-      setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
-    }
-    setLoading(false);
-  };
-
-  if (!user) {
-    return (
-      <div className="page-container">
-        <div className="auth-required">
-          <h2>AI Tutor</h2>
-          <p>Please login to chat with the AI tutor.</p>
-          <Link to="/login" className="btn btn-primary">Login</Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page-container">
-      <div className="ai-tutor-container">
-        <div className="page-header">
-          <h1>AI English Tutor</h1>
-          <p>Ask me anything about English learning!</p>
-        </div>
-        <div className="chat-window">
-          <div className="chat-messages">
-            {messages.length === 0 && (
-              <div className="chat-welcome">
-                <p>Hello! I'm your AI English tutor. How can I help you today?</p>
-                <p>You can ask me about:</p>
-                <ul>
-                  <li>Grammar explanations</li>
-                  <li>Vocabulary meaning and usage</li>
-                  <li>Conversation practice</li>
-                  <li>Translation help</li>
-                </ul>
-              </div>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`chat-message ${msg.role}`}>
-                <div className="chat-bubble">
-                  {msg.role === 'assistant' ? 'Tutor: ' : 'You: '}{msg.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="chat-message assistant">
-                <div className="chat-bubble typing">Thinking...</div>
-              </div>
-            )}
-          </div>
-          <div className="chat-input-area">
-            <input
-              type="text"
-              className="chat-input"
-              placeholder="Ask me about English..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendMessage()}
-            />
-            <button onClick={sendMessage} className="btn btn-primary" disabled={loading}>
-              Send
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============== LOGIN PAGE ==============
-function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    const result = await login(username, password);
-    if (result.success) {
-      navigate('/');
-    } else {
-      setError(result.message);
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1>Login</h1>
-        {error && <div className="error-msg">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Username</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        <p className="auth-footer">
-          Don't have an account? <Link to="/register">Register</Link>
-        </p>
-        <div className="demo-accounts">
-          <p><strong>Demo accounts:</strong></p>
-          <p>admin / admin123</p>
-          <p>teacher / teacher123</p>
-          <p>student / student123</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============== REGISTER PAGE ==============
-function RegisterPage() {
-  const { register } = useAuth();
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', email: '', password: '', fullName: '' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    const result = await register(form.username, form.email, form.password, form.fullName);
-    if (result.success) {
-      navigate('/');
-    } else {
-      setError(result.message);
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1>Create Account</h1>
-        {error && <div className="error-msg">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Username</label>
-            <input type="text" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} required />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
-          </div>
-          <div className="form-group">
-            <label>Full Name</label>
-            <input type="text" value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} />
-          </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} />
-          </div>
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'Creating account...' : 'Register'}
-          </button>
-        </form>
-        <p className="auth-footer">
-          Already have an account? <Link to="/login">Login</Link>
-        </p>
-      </div>
-    </div>
   );
 }
 
@@ -583,14 +153,30 @@ function App() {
           <Navbar />
           <main className="main-content">
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/home" element={<LandingPage />} />
               <Route path="/courses" element={<CoursesPage />} />
               <Route path="/courses/:id" element={<CourseDetailPage />} />
               <Route path="/vocabulary" element={<VocabularyPage />} />
-              <Route path="/ai-tutor" element={<AITutorPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route path="*" element={<Navigate to="/" />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/exercises" element={<ExercisesPage />} />
+              <Route path="/forum" element={<ForumPage />} />
+              <Route path="/gamification" element={<GamificationPage />} />
+              <Route path="/listening" element={<ListeningPage />} />
+              <Route path="/speaking" element={<SpeakingPage />} />
+              <Route path="/mentor" element={<MentorPage />} />
+              <Route path="/progress" element={<ProgressPage />} />
+              <Route path="/placement-test" element={<PlacementTestPage />} />
+              <Route path="/teacher" element={<TeacherDashboardPage />} />
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/learning-path" element={<LearningPathPage />} />
+              <Route path="/analytics" element={<LearningAnalyticsPage />} />
+              <Route path="/recommendations" element={<RecommendationPage />} />
+              <Route path="/daily-challenge" element={<DailyChallengePage />} />
+              <Route path="/agent" element={<AgentPage />} />
             </Routes>
           </main>
           <Footer />

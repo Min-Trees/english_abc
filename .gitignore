@@ -40,6 +40,13 @@ target/
 Thumbs.db
 
 # ======================
+# Environment Variables
+# ======================
+.env
+.env.local
+.env.*.local
+
+# ======================
 # Logs & temp
 # ======================
 logs/
