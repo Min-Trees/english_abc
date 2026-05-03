@@ -92,9 +92,11 @@ abc-english/
 
 ## Environment Variables
 
+The project uses environment variables for sensitive configuration. Create your own `.env` files based on the examples.
+
 ### Frontend (.env)
 
-Create `frontend/.env` with:
+Create `frontend/.env` (already created if you ran setup):
 
 ```
 REACT_APP_API_URL=http://localhost:8080/api
@@ -103,17 +105,22 @@ REACT_APP_WS_URL=http://localhost:8080
 
 ### Backend (.env)
 
-Create `backend/.env` with:
+Create `backend/.env` (already created if you ran setup):
 
 ```
 # Groq API Key (get from https://console.groq.com)
-GROQ_API_KEY=your_groq_api_key
+GROQ_API_KEY=your_groq_api_key_here
 
-# Database (Railway PostgreSQL)
-SPRING_DATASOURCE_URL=jdbc:postgresql://host:port/database
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=your_password
+# Database Configuration
+DB_URL=jdbc:postgresql://localhost:5432/abcenglish
+DB_USERNAME=postgres
+DB_PASSWORD=your_password_here
+
+# JWT Secret
+JWT_SECRET=your_secure_jwt_secret
 ```
+
+> Note: The `.env` files are ignored by git and will not be pushed to GitHub.
 
 ## Docker Deployment
 
