@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: abc-english-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080/api
+    networks:
+      - abc-network
+
+  backend:
+    build: ./backend
+    container_name: abc-english-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - backend/.env
+    networks:
+      - abc-network
+
+networks:
+  abc-network:
+    driver: bridge
