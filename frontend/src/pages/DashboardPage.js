@@ -72,9 +72,11 @@ export default function DashboardPage() {
   const [results, setResults] = useState([]);
 
   useEffect(() => {
-    agentAPI.guidance().then(r => setGuidance(r.data)).catch(() => {});
+    if (user?.userId) {
+      agentAPI.getGuidance(user.userId).then(r => setGuidance(r.data)).catch(() => {});
+    }
     resultAPI.getMyResults().then(r => setResults(r.data)).catch(() => {});
-  }, []);
+  }, [user]);
 
   const avgScore = results.length > 0
     ? (results.reduce((s, r) => s + (r.score || 0), 0) / results.length).toFixed(1)

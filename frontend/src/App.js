@@ -1,75 +1,8 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
-
-const AuthContext = createContext(null);
-
-function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('abc_user');
-    const savedToken = localStorage.getItem('abc_token');
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
-    }
-    setLoading(false);
-  }, []);
-
-  const login = async (username, password) => {
-    try {
-      const res = await axios.post(`${API_URL}/auth/login`, { username, password });
-      if (res.data.success) {
-        const data = res.data.data;
-        localStorage.setItem('abc_token', data.token);
-        localStorage.setItem('abc_user', JSON.stringify(data));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-        setUser(data);
-        return { success: true };
-      }
-      return { success: false, message: res.data.message };
-    } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Login failed' };
-    }
-  };
-
-  const register = async (username, email, password, fullName) => {
-    try {
-      const res = await axios.post(`${API_URL}/auth/register`, { username, email, password, fullName });
-      if (res.data.success) {
-        const data = res.data.data;
-        localStorage.setItem('abc_token', data.token);
-        localStorage.setItem('abc_user', JSON.stringify(data));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-        setUser(data);
-        return { success: true };
-      }
-      return { success: false, message: res.data.message };
-    } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Registration failed' };
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('abc_token');
-    localStorage.removeItem('abc_user');
-    delete axios.defaults.headers.common['Authorization'];
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-const useAuth = () => useContext(AuthContext);
+import './index.css';
 
 // Import pages from pages folder
 import LandingPage from './pages/LandingPage';
