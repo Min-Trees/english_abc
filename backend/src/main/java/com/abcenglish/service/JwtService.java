@@ -3,6 +3,7 @@ package com.abcenglish.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +23,33 @@ public class JwtService {
     @Value("${app.jwtExpirationMs}")
     private long jwtExpirationMs;
 
-    public String extractUsername(String token) {
-        return extractClaim(token, new Function<Claims, String>() {
-            @Override
-            public String apply(Claims claims) {
-                return claims.getSubject();
+    public Long extractUserId(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return extractUserIdFromToken(authHeader.substring(7));
+        }
+        return null;
+    }
+
+    public Long extractUserIdFromToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            Object userId = claims.get("userId");
+            if (userId instanceof Integer) {
+                return ((Integer) userId).longValue();
+            } else if (userId instanceof Long) {
+                return (Long) userId;
+            } else if (userId instanceof String) {
+                return Long.parseLong((String) userId);
             }
-        });
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String extractUsername(String token) {
+        return extractClaim(token, claims -> claims.getSubject());
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -56,8 +77,12 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, String username) {
-        String extractedUsername = extractUsername(token);
-        return extractedUsername.equals(username) && !isTokenExpired(token);
+        try {
+            String extractedUsername = extractUsername(token);
+            return extractedUsername != null && extractedUsername.equals(username) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {
@@ -65,12 +90,7 @@ public class JwtService {
     }
 
     private Date extractExpiration(String token) {
-        return extractClaim(token, new Function<Claims, Date>() {
-            @Override
-            public Date apply(Claims claims) {
-                return claims.getExpiration();
-            }
-        });
+        return extractClaim(token, Claims::getExpiration);
     }
 
     private Claims extractAllClaims(String token) {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { placementTestAPI } from '../api/api';
+import { placementAPI } from '../api/api';
 import { CheckCircle, XCircle, ChevronRight } from 'lucide-react';
 
 const QUESTIONS = [
@@ -52,7 +52,7 @@ export default function PlacementTestPage() {
     const correct = QUESTIONS.filter(q => answers[q.id] === q.answer).length;
     const level = inferLevel(correct, QUESTIONS.length);
     try {
-      const res = await placementTestAPI.submit({ correctAnswers: correct, totalQuestions: QUESTIONS.length, recommendedLevel: level });
+      const res = await placementAPI.submit({ correctAnswers: correct, totalQuestions: QUESTIONS.length, recommendedLevel: level });
       setResult({ correct, total: QUESTIONS.length, level: res.data?.level || level });
       setSubmitted(true);
       // Update local user data

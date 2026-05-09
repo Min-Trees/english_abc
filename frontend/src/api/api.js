@@ -51,7 +51,6 @@ api.interceptors.response.use(
     }
 
     // Handle other errors
-    const message = error.response?.data?.message || 'Đã xảy ra lỗi';
     if (error.response?.status >= 500) {
       console.error('Lỗi server. Vui lòng thử lại sau.');
     }
@@ -99,6 +98,7 @@ export const userAPI = {
 export const courseAPI = {
   getAll: (params) => api.get('/courses', { params }),
   getById: (id) => api.get(`/courses/${id}`),
+  getLessons: (courseId) => api.get(`/courses/${courseId}/lessons`),
   getChapters: (courseId) => api.get(`/courses/${courseId}/chapters`),
   enroll: (courseId) => api.post(`/courses/${courseId}/enroll`),
   getProgress: (courseId) => api.get(`/courses/${courseId}/progress`),
@@ -109,6 +109,8 @@ export const courseAPI = {
 // ─── Lesson API ───────────────────────────────────────────────────────────────
 export const lessonAPI = {
   getById: (id) => api.get(`/lessons/${id}`),
+  getLessons: (courseId) => api.get(`/lessons/course/${courseId}`),
+  getCourseLessons: (courseId) => api.get(`/lessons/course/${courseId}`),
   start: (lessonId) => api.post(`/lessons/${lessonId}/start`),
   complete: (lessonId) => api.post(`/lessons/${lessonId}/complete`),
   updateProgress: (lessonId, progress) => api.put(`/lessons/${lessonId}/progress`, { progress }),
@@ -127,9 +129,13 @@ export const vocabularyAPI = {
 
 // ─── Exercise API ─────────────────────────────────────────────────────────────
 export const exerciseAPI = {
+  getAll: (level = null, skill = null) =>
+    api.get('/exercises', { params: { level, type: skill } }),
   getById: (id) => api.get(`/exercises/${id}`),
-  submit: (exerciseId, answers) => api.post(`/exercises/${exerciseId}/submit`, { answers }),
+  submit: (id, answers) => api.post(`/exercises/${id}/submit`, answers),
   getResults: () => api.get('/exercises/results'),
+  generate: (skillType, level, topic) =>
+    api.post('/exercises/generate', { skillType, level, topic }),
 };
 
 // ─── Forum API ─────────────────────────────────────────────────────────────────
@@ -139,9 +145,11 @@ export const forumAPI = {
   createPost: (data) => api.post('/forum/posts', data),
   updatePost: (id, data) => api.put(`/forum/posts/${id}`, data),
   deletePost: (id) => api.delete(`/forum/posts/${id}`),
-  likePost: (id) => api.post(`/forum/posts/${id}/like`),
+  upvotePost: (id) => api.post(`/forum/posts/${id}/upvote`),
   getComments: (postId) => api.get(`/forum/posts/${postId}/comments`),
   addComment: (postId, data) => api.post(`/forum/posts/${postId}/comments`, data),
+  upvoteComment: (commentId) => api.post(`/forum/comments/${commentId}/upvote`),
+  acceptAnswer: (postId, commentId) => api.post(`/forum/posts/${postId}/accept/${commentId}`),
 };
 
 // ─── Gamification API ─────────────────────────────────────────────────────────
@@ -180,6 +188,7 @@ export const placementAPI = {
 
 // ─── Learning Path API ─────────────────────────────────────────────────────────
 export const learningPathAPI = {
+  getPath: () => api.get('/learning-path'),
   get: () => api.get('/learning-path'),
   generate: () => api.post('/learning-path/generate'),
   startItem: (itemId) => api.post(`/learning-path/item/${itemId}/start`),
@@ -188,9 +197,16 @@ export const learningPathAPI = {
 
 // ─── Daily Challenge API ──────────────────────────────────────────────────────
 export const dailyAPI = {
+  // Today's challenge with all sections
   getToday: () => api.get('/daily'),
+  // Submit challenge answers
+  submit: (data) => api.post('/daily/submit', data),
+  // Weekly progress Mon-Sun
   getWeek: () => api.get('/daily/week'),
-  complete: (data) => api.post('/daily/complete', data),
+  // Streak info
+  getStreak: () => api.get('/daily/streak'),
+  // Challenge history
+  getHistory: (limit = 10) => api.get('/daily/history', { params: { limit } }),
 };
 
 // ─── Certificate API ───────────────────────────────────────────────────────────
@@ -203,6 +219,7 @@ export const certificateAPI = {
 
 // ─── Analytics API ─────────────────────────────────────────────────────────────
 export const analyticsAPI = {
+  getMyAnalytics: () => api.get('/analytics/my'),
   getDashboard: () => api.get('/analytics'),
   getStats: () => api.get('/analytics/stats'),
   getProgress: (days) => api.get('/analytics/progress', { params: { days } }),
@@ -225,11 +242,41 @@ export const agentAPI = {
   getGuidance: (userId) => api.get(`/agent/guidance/${userId}`),
 };
 
-// ─── Placement Test API ─────────────────────────────────────────────────────────
-export const placementTestAPI = {
-  start: (level) => api.post('/placement/start', {}, { params: { level } }),
-  submit: (data) => api.post('/placement/submit', data),
-  getResult: () => api.get('/placement/result'),
+// ─── Video Learning API ─────────────────────────────────────────────────────────
+export const videoAPI = {
+  getLessonVideo: (lessonId) => api.get(`/video/lesson/${lessonId}`),
+  lookupWord: (word) => api.post('/video/lookup', { word }),
+  saveWord: (vocabularyId) => api.post('/video/save', { vocabularyId }),
+};
+
+// ─── Story Mode API ─────────────────────────────────────────────────────────────
+export const storyAPI = {
+  getAll: () => api.get('/stories'),
+  getById: (id) => api.get(`/stories/${id}`),
+  submitAnswer: (id, stepOrder, answer) =>
+    api.post(`/stories/${id}/answer`, { stepOrder, answer }),
+  getProgress: () => api.get('/stories/progress'),
+};
+
+// ─── Flashcard API ──────────────────────────────────────────────────────────────
+export const flashcardAPI = {
+  getToday: () => api.get('/flashcards/today'),
+  review: (vocabularyId, rating) =>
+    api.post('/flashcards/review', { vocabularyId, rating }),
+  getStats: () => api.get('/flashcards/stats'),
+  getAll: () => api.get('/flashcards/all'),
+  addCard: (data) => api.post('/flashcards', data),
+  deleteCard: (vocabularyId) => api.delete(`/flashcards/${vocabularyId}`),
+};
+
+// ─── Saved Word API ────────────────────────────────────────────────────────────
+export const savedWordAPI = {
+  getAll: () => api.get('/saved-words'),
+  save: (data) => api.post('/saved-words', data),
+  remove: (vocabularyId) => api.delete(`/saved-words/${vocabularyId}`),
+  getFlashcards: () => api.get('/saved-words/flashcards'),
+  review: (data) => api.post('/saved-words/flashcards/review', data),
+  getStats: () => api.get('/saved-words/stats'),
 };
 
 // ─── Result API ────────────────────────────────────────────────────────────────
@@ -237,13 +284,47 @@ export const resultAPI = {
   getMyResults: () => api.get('/exercises/results'),
 };
 
+// ─── Test API ─────────────────────────────────────────────────────────────────
+export const testAPI = {
+  getAll: (params) => api.get('/tests', { params }),
+  getById: (id) => api.get(`/tests/${id}`),
+  start: (id) => api.post(`/tests/${id}/start`),
+  submit: (testId, sessionId, answers) => api.post(`/tests/${testId}/submit/${sessionId}`, answers),
+  getResults: () => api.get('/tests/results'),
+  getResultById: (id) => api.get(`/tests/results/${id}`),
+  create: (data) => api.post('/tests', data),
+  update: (id, data) => api.put(`/tests/${id}`, data),
+  delete: (id) => api.delete(`/tests/${id}`),
+};
+
+// ─── Ranking API ───────────────────────────────────────────────────────────────
+export const rankingAPI = {
+  get: (period = 'all', limit = 10, level = null) =>
+    api.get('/ranking', { params: { period, limit, level } }),
+  getWeekly: (limit = 10) => api.get('/ranking/weekly', { params: { limit } }),
+  getMonthly: (limit = 10) => api.get('/ranking/monthly', { params: { limit } }),
+  getByLevel: (level, limit = 10) => api.get(`/ranking/level/${level}`, { params: { limit } }),
+  getMyRank: () => api.get('/ranking/my-rank'),
+};
+
 // ─── Admin API ─────────────────────────────────────────────────────────────────
 export const adminAPI = {
   getStats: () => api.get('/admin/stats'),
-  getUsers: () => api.get('/admin/users'),
+  getUsers: (role = null, level = null, page = 0, size = 20, search = null) =>
+    api.get('/admin/users', { params: { role, level, page, size, search } }),
+  getUserById: (userId) => api.get(`/admin/users/${userId}`),
+  updateUser: (userId, data) => api.put(`/admin/users/${userId}`, data),
   updateRole: (userId, role) => api.put(`/admin/users/${userId}/role`, { role }),
+  updateStatus: (userId, enabled) => api.put(`/admin/users/${userId}/status`, { enabled }),
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
-  getReports: () => api.get('/admin/reports'),
+  getReports: (days = 30) => api.get('/admin/reports', { params: { days } }),
+  getAnalytics: () => api.get('/admin/analytics'),
+  getTests: () => api.get('/tests'),
+  createTest: (data) => api.post('/tests', data),
+  updateTest: (id, data) => api.put(`/tests/${id}`, data),
+  deleteTest: (id) => api.delete(`/tests/${id}`),
+  getRanking: (period = 'all', limit = 50) =>
+    api.get('/ranking', { params: { period, limit } }),
 };
 
 // ─── Chat API ─────────────────────────────────────────────────────────────────
@@ -267,6 +348,135 @@ export const passwordResetAPI = {
   request: (email) => api.post('/auth/forgot-password', { email }),
   verifyOtp: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
   reset: (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword }),
+};
+
+// ─── Teacher API ─────────────────────────────────────────────────────────────────
+export const teacherAPI = {
+  createLesson: (data) => api.post('/teacher/lessons', data),
+  createExercise: (data) => api.post('/teacher/exercises', data),
+  addQuestion: (exerciseId, data) => api.post(`/teacher/exercises/${exerciseId}/questions`, data),
+  generateExercises: (data) => api.post('/teacher/generate-exercises', data),
+  generateFromContent: (data) => api.post('/teacher/generate-from-content', data),
+  getSubmissions: () => api.get('/teacher/submissions'),
+};
+
+// ─── Exercise Enhanced API ───────────────────────────────────────────────────────
+export const exerciseEnhancedAPI = {
+  submit: (id, answers) => api.post(`/exercises/${id}/submit`, answers),
+  suggestVocab: (data) => api.post('/exercises/suggest-vocab', data),
+  saveWord: (data) => api.post('/exercises/save-word', data),
+};
+
+// ─── Lesson Flow API ──────────────────────────────────────────────────────────
+export const lessonFlowAPI = {
+  getLessonFlow: (lessonId) => api.get(`/lesson-flow/${lessonId}`),
+  getContent: (lessonId) => api.get(`/lesson-flow/${lessonId}/content`),
+  getExercises: (lessonId) => api.get(`/lesson-flow/${lessonId}/exercises`),
+  getExerciseDetail: (lessonId, exerciseId) => api.get(`/lesson-flow/${lessonId}/exercise/${exerciseId}`),
+  getTest: (lessonId) => api.get(`/lesson-flow/${lessonId}/test`),
+  updateProgress: (lessonId, data) => api.post(`/lesson-flow/${lessonId}/progress`, data),
+};
+
+// ─── Exercise Flow API ─────────────────────────────────────────────────────────
+export const exerciseFlowAPI = {
+  submit: (exerciseId, answers, timeSpentSeconds = 0) =>
+    api.post(`/exercises/v2/${exerciseId}/submit`, { ...answers, timeSpentSeconds }),
+  gradeSingle: (exerciseId, data) => api.post(`/exercises/v2/${exerciseId}/grade-single`, data),
+};
+
+// ─── Test Flow API ─────────────────────────────────────────────────────────────
+export const testFlowAPI = {
+  start: (testId, lessonId = null) => api.post(`/tests/${testId}/start`, { lessonId }),
+  submit: (testId, data) => api.post(`/tests/${testId}/submit`, data),
+  getHistory: () => api.get('/tests/history'),
+  create: (data) => api.post('/tests/create', data),
+};
+
+// ─── Progress API ──────────────────────────────────────────────────────────────
+export const progressAPI = {
+  getLesson: (lessonId) => api.get(`/progress/lesson/${lessonId}`),
+  getCourse: (courseId) => api.get(`/progress/course/${courseId}`),
+  getStats: () => api.get('/progress/stats'),
+};
+
+// ─── Lesson Management API ──────────────────────────────────────────────────────
+export const lessonManagementAPI = {
+  // Lesson CRUD
+  createLesson: (data) => api.post('/lesson-management/lessons', data),
+  updateLesson: (id, data) => api.put(`/lesson-management/lessons/${id}`, data),
+  deleteLesson: (id) => api.delete(`/lesson-management/lessons/${id}`),
+  getLesson: (id) => api.get(`/lesson-management/lessons/${id}`),
+  getLessonsByCourse: (courseId) => api.get(`/lesson-management/lessons/course/${courseId}`),
+
+  // Content
+  getContent: (lessonId) => api.get(`/lesson-management/lessons/${lessonId}/content`),
+  saveContent: (lessonId, data) => api.put(`/lesson-management/lessons/${lessonId}/content`, data),
+
+  // Subtitles
+  getSubtitles: (lessonId, language) =>
+    api.get(`/lesson-management/lessons/${lessonId}/subtitles`, { params: { language } }),
+  saveSubtitles: (lessonId, subtitles) =>
+    api.put(`/lesson-management/lessons/${lessonId}/subtitles`, subtitles),
+
+  // Vocabulary
+  getVocabulary: (lessonId) => api.get(`/lesson-management/lessons/${lessonId}/vocabulary`),
+  saveVocabulary: (lessonId, words) =>
+    api.put(`/lesson-management/lessons/${lessonId}/vocabulary`, words),
+
+  // Exercises
+  getExercises: (lessonId) => api.get(`/lesson-management/lessons/${lessonId}/exercises`),
+  getExercise: (exerciseId) => api.get(`/lesson-management/exercises/${exerciseId}`),
+  createExercise: (data) => api.post('/lesson-management/exercises', data),
+  deleteExercise: (id) => api.delete(`/lesson-management/exercises/${id}`),
+
+  // Mini Test
+  getMiniTest: (lessonId) => api.get(`/lesson-management/lessons/${lessonId}/mini-test`),
+  createMiniTest: (data) => api.post('/lesson-management/mini-tests', data),
+  updateMiniTest: (testId, data) => api.put(`/lesson-management/mini-tests/${testId}`, data),
+  submitMiniTest: (lessonId, data) =>
+    api.post(`/lesson-management/lessons/${lessonId}/mini-test/submit`, data),
+
+  // Completion Settings
+  getCompletionSettings: (lessonId) =>
+    api.get(`/lesson-management/lessons/${lessonId}/completion-settings`),
+  saveCompletionSettings: (lessonId, data) =>
+    api.put(`/lesson-management/lessons/${lessonId}/completion-settings`, data),
+
+  // Progress
+  getProgress: (lessonId) => api.get(`/lesson-management/lessons/${lessonId}/progress`),
+};
+
+// ─── Course Management API ─────────────────────────────────────────────────────
+export const courseManagementAPI = {
+  create: (data) => api.post('/course-management', data),
+  update: (id, data) => api.put(`/course-management/${id}`, data),
+  delete: (id) => api.delete(`/course-management/${id}`),
+  getAll: () => api.get('/course-management'),
+  getById: (id) => api.get(`/course-management/${id}`),
+  getDetail: (id) => api.get(`/course-management/${id}/detail`),
+  getByLevel: (level) => api.get(`/course-management/level/${level}`),
+  getFeatured: () => api.get('/course-management/featured'),
+  enroll: (courseId) => api.post(`/course-management/${courseId}/enroll`),
+  reorderLessons: (courseId, lessonIds) =>
+    api.put(`/course-management/${courseId}/lessons/order`, lessonIds),
+  getStats: (courseId) => api.get(`/course-management/${courseId}/stats`),
+};
+
+// ─── Test Management API ──────────────────────────────────────────────────────
+export const testManagementAPI = {
+  start: (testId, data = {}) => api.post(`/test-management/tests/${testId}/start`, data),
+  resume: (sessionId) => api.post(`/test-management/sessions/${sessionId}/resume`),
+  autoSave: (sessionId, data) => api.post(`/test-management/sessions/${sessionId}/autosave`, data),
+  submit: (testId, data) => api.post(`/test-management/tests/${testId}/submit`, data),
+  getResult: (resultId) => api.get(`/test-management/results/${resultId}`),
+  getSession: (sessionId) => api.get(`/test-management/sessions/${sessionId}`),
+  getInProgressSessions: () => api.get('/test-management/sessions/in-progress'),
+  completeSection: (sessionId, sectionType) =>
+    api.post(`/test-management/sessions/${sessionId}/section/complete`, { sectionType }),
+  lockSession: (sessionId) => api.post(`/test-management/sessions/${sessionId}/lock`),
+  gradeWriting: (data) => api.post('/test-management/grade/writing', data),
+  gradeSpeaking: (data) => api.post('/test-management/grade/speaking', data),
+  batchGrade: (requests) => api.post('/test-management/grade/batch', requests),
 };
 
 // Export retry wrapper

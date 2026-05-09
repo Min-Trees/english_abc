@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { agentAPI, resultAPI, adminAPI } from '../api/api';
-import { Bot, BookOpen, BarChart2, Trophy, Zap, Target, ChevronRight, Shield, Settings } from 'lucide-react';
+import { agentAPI, resultAPI, adminAPI, dailyAPI } from '../api/api';
+import { BarChart2, Trophy, Zap, Target, ChevronRight, Shield, Settings } from 'lucide-react';
 
 function AdminSummary() {
   const [stats, setStats] = useState(null);
@@ -70,13 +70,31 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [guidance, setGuidance] = useState(null);
   const [results, setResults] = useState([]);
+  const [dailyChallenge, setDailyChallenge] = useState(null);
+  const [weeklyProgress, setWeeklyProgress] = useState([]);
 
   useEffect(() => {
     if (user?.userId) {
       agentAPI.getGuidance(user.userId).then(r => setGuidance(r.data)).catch(() => {});
     }
     resultAPI.getMyResults().then(r => setResults(r.data)).catch(() => {});
+    loadDailyChallenge();
   }, [user]);
+
+  const loadDailyChallenge = async () => {
+    try {
+      const res = await dailyAPI.getToday();
+      if (res.data.success) {
+        setDailyChallenge(res.data.data);
+      }
+      const weekRes = await dailyAPI.getWeek();
+      if (weekRes.data.success) {
+        setWeeklyProgress(weekRes.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error loading daily challenge:', err);
+    }
+  };
 
   const avgScore = results.length > 0
     ? (results.reduce((s, r) => s + (r.score || 0), 0) / results.length).toFixed(1)
@@ -146,6 +164,140 @@ export default function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Daily Challenge Widget */}
+      {dailyChallenge && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#1a202c', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            🎯 Daily Challenge
+            {dailyChallenge.streak?.currentStreak > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '4px 12px', borderRadius: 100,
+                fontSize: '0.8rem', fontWeight: 700,
+                background: 'linear-gradient(135deg, #FF6B35, #FF8C42)',
+                color: 'white',
+              }}>
+                🔥 {dailyChallenge.streak.currentStreak} ngày
+              </span>
+            )}
+          </h2>
+
+          <Link to="/daily-challenge" style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: dailyChallenge.alreadyCompleted
+                ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              borderRadius: 20,
+              padding: 24,
+              color: 'white',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(139, 92, 246, 0.3)',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}>
+              {/* Decorative circles */}
+              <div style={{
+                position: 'absolute', top: -20, right: -20,
+                width: 120, height: 120, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.1)',
+              }} />
+              <div style={{
+                position: 'absolute', bottom: -30, right: 60,
+                width: 80, height: 80, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.06)',
+              }} />
+
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 4 }}>
+                      {dailyChallenge.title || 'Thử thách hàng ngày'}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.85 }}>
+                      {dailyChallenge.description || 'Hoàn thành bài tập hôm nay để nhận XP!'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: 4 }}>
+                      {dailyChallenge.alreadyCompleted ? '🎉' : '🎯'}
+                    </div>
+                    {dailyChallenge.alreadyCompleted ? (
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: 100 }}>
+                        Đã hoàn thành
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, background: 'rgba(255,255,255,0.25)', padding: '4px 12px', borderRadius: 100 }}>
+                        ⭐ +{dailyChallenge.xpReward} XP
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Challenge Sections Preview */}
+                <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {['📖 Reading', '🎧 Listening', '📚 Vocabulary', '✍️ Writing'].map((sec, i) => (
+                    <div key={i} style={{
+                      padding: '6px 14px',
+                      background: 'rgba(255,255,255,0.15)',
+                      borderRadius: 100,
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      backdropFilter: 'blur(4px)',
+                    }}>
+                      {sec}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress indicator */}
+                {dailyChallenge.progress?.completed && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: 6, fontWeight: 700 }}>
+                      <span>Điểm số</span>
+                      <span>{dailyChallenge.progress.score}/10</span>
+                    </div>
+                    <div style={{ height: 8, background: 'rgba(255,255,255,0.2)', borderRadius: 8, overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${(dailyChallenge.progress.score / 10) * 100}%`,
+                        height: '100%',
+                        background: 'white',
+                        borderRadius: 8,
+                      }} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Weekly mini progress */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {weeklyProgress.slice(0, 7).map((day, i) => (
+                      <div key={i} style={{
+                        width: 24, height: 24, borderRadius: '50%',
+                        background: day.completed ? 'rgba(255,255,255,0.9)' : day.isFuture ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.3)',
+                        border: day.isToday ? '2px solid white' : 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.65rem', fontWeight: 900,
+                        color: day.completed ? '#22c55e' : 'white',
+                      }}>
+                        {day.completed ? '✓' : i + 1}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    fontSize: '0.85rem', fontWeight: 700,
+                    color: 'white',
+                  }}>
+                    {dailyChallenge.alreadyCompleted ? 'Ngày mai nhé →' : 'Bắt đầu ngay →'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         {/* Role-based section */}

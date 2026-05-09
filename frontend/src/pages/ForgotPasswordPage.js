@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { BookOpen, Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState('request'); // request, verify
@@ -60,25 +60,25 @@ export default function ForgotPasswordPage() {
 
   return (
     <div style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div className="clay-card" style={{ padding: 48, width: '100%', maxWidth: 440 }}>
+      <div className="clay-card" style={{ padding: 40, width: '100%', maxWidth: 440 }}>
         <Link to="/login" style={{ textDecoration: 'none', color: '#718096', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
           <ArrowLeft size={16} /> Quay lại đăng nhập
         </Link>
 
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 70, height: 70, borderRadius: 22,
+            width: 80, height: 80, borderRadius: 28,
             background: 'linear-gradient(135deg, #FDBCB4, #22C55E)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 8px 24px rgba(253,188,180,0.5)',
+            margin: '0 auto 20px',
+            boxShadow: '0 12px 32px rgba(253, 188, 180, 0.5)',
           }}>
-            <Mail size={32} color="white" />
+            <Mail size={36} color="white" />
           </div>
-          <h1 style={{ fontWeight: 900, fontSize: '1.6rem', color: '#1a202c' }}>
+          <h1 style={{ fontWeight: 900, fontSize: '2rem', color: '#1a202c', marginBottom: 8 }}>
             {step === 'request' ? 'Quên mật khẩu?' : 'Nhập mã OTP'}
           </h1>
-          <p style={{ color: '#718096', fontWeight: 600, marginTop: 8 }}>
+          <p style={{ color: '#718096', fontWeight: 600 }}>
             {step === 'request'
               ? 'Nhập email để nhận mã đặt lại mật khẩu'
               : 'Nhập mã OTP đã gửi đến email của bạn'}

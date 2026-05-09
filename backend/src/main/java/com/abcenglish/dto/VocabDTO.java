@@ -18,6 +18,7 @@ public class VocabDTO {
     private int timesReviewed;
     private int timesCorrect;
     private LocalDateTime createdAt;
+    private Long createdBy;
 
     public VocabDTO() {}
 
@@ -37,6 +38,7 @@ public class VocabDTO {
         dto.setTimesReviewed(w.getTimesReviewed());
         dto.setTimesCorrect(w.getTimesCorrect());
         dto.setCreatedAt(w.getCreatedAt());
+        dto.setCreatedBy(w.getCreatedBy());
         return dto;
     }
 
@@ -68,4 +70,6 @@ public class VocabDTO {
     public void setTimesCorrect(int timesCorrect) { this.timesCorrect = timesCorrect; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Long getCreatedBy() { return createdBy; }
+    public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
 }

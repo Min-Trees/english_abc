@@ -128,25 +128,108 @@ function Install-Dependencies {
 }
 
 # ============================================================
+# KILL SPECIFIC PORTS
+# ============================================================
+function Kill-Ports {
+    Write-Step "Killing processes on ports 8080 and 3001..."
+
+    $ports = @(8080, 3001)
+    foreach ($port in $ports) {
+        $pids = @()
+        try {
+            $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+            $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+        } catch { }
+
+        foreach ($processId in $pids) {
+            if ($processId -and $processId -ne 0) {
+                try {
+                    $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+                    $name = if ($proc) { $proc.ProcessName } else { "PID $processId" }
+                    Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+                    Write-Success "  Killed $name (PID $processId) on port $port"
+                } catch { }
+            }
+        }
+
+        # Fallback via netstat
+        $output = netstat -ano 2>$null | Select-String ":$port\s+.*LISTENING" -AllMatches
+        foreach ($line in $output) {
+            $parts = $line.Line -split '\s+'
+            $processId = $parts[-1]
+            if ($processId -and $processId -match '^\d+$') {
+                try {
+                    $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+                    $name = if ($proc) { $proc.ProcessName } else { "PID $processId" }
+                    Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+                    Write-Success "  Killed $name (PID $processId) on port $port"
+                } catch { }
+            }
+        }
+    }
+
+    Start-Sleep -Seconds 1
+}
+
+# ============================================================
 # STOP ALL
 # ============================================================
 function Stop-All {
     Write-Step "Stopping all services..."
 
-    # Stop Node processes on frontend port
-    Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
-        $_.MainWindowTitle -like "*react*" -or $_.MainWindowTitle -like "*frontend*"
-    } | Stop-Process -Force -ErrorAction SilentlyContinue
-
-    # Stop processes on specific ports
-    $frontendPids = netstat -ano | Select-String ":3001.*LISTENING" | ForEach-Object { ($_ -split "\s+")[-1] }
-    foreach ($pid in $frontendPids) {
-        Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+    # Kill processes on port 8080 (Backend)
+    Write-Host "  Killing processes on port 8080..."
+    $backendPids = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($pid in $backendPids) {
+        if ($pid -and $pid -ne 0) {
+            try {
+                Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+                Write-Success "  Killed PID $pid (backend)"
+            } catch { }
+        }
     }
 
-    $backendPids = netstat -ano | Select-String ":8080.*LISTENING" | ForEach-Object { ($_ -split "\s+")[-1] }
-    foreach ($pid in $backendPids) {
-        Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+    # Kill processes on port 3001 (Frontend)
+    Write-Host "  Killing processes on port 3001..."
+    $frontendPids = Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($pid in $frontendPids) {
+        if ($pid -and $pid -ne 0) {
+            try {
+                Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+                Write-Success "  Killed PID $pid (frontend)"
+            } catch { }
+        }
+    }
+
+    # Also try netstat fallback for compatibility
+    Write-Host "  Scanning with netstat..."
+    $netstatOutput = netstat -ano 2>$null
+    if ($netstatOutput) {
+        $allPorts = @(8080, 3001)
+        foreach ($port in $allPorts) {
+            $matches = $netstatOutput | Select-String ":$port\s+.*LISTENING" -AllMatches
+            foreach ($match in $matches) {
+                $parts = $match.Line -split '\s+'
+                $pid = $parts[-1]
+                if ($pid -and $pid -match '^\d+$') {
+                    try {
+                        Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+                        Write-Success "  Killed PID $pid (port $port)"
+                    } catch { }
+                }
+            }
+        }
+    }
+
+    # Kill Node.js and Java processes that might be running the servers
+    Get-Process -Name "node","npm","java" -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+            if ($cmd -match "spring-boot|javaw|react-scripts|npm.*start") {
+                Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+                Write-Success "  Killed $($_.ProcessName) PID $($_.Id)"
+            }
+        } catch { }
     }
 
     Start-Sleep -Seconds 2
@@ -198,13 +281,34 @@ function Start-Backend {
     # Load environment variables from .env file
     Load-EnvFile
 
+    # Read .env and prepare environment block for Start-Process
+    $envBlock = @{}
+    $envFile = Join-Path $BACKEND_DIR ".env"
+    if (Test-Path $envFile) {
+        Get-Content $envFile | ForEach-Object {
+            if ($_ -match "^([^=]+)=(.*)$" -and -not $_.StartsWith("#")) {
+                $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
+                $envBlock[$key] = $value
+            }
+        }
+    }
+
+    # Build command with env vars
+    $envVars = ($envBlock.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join "; "
+    $runCommand = "cd '$BACKEND_DIR'; $envVars; mvn spring-boot:run"
+
+    Write-Host "  Loading GROQ_API_KEY from .env..."
+    if ($envBlock.ContainsKey("GROQ_API_KEY")) {
+        Write-Success "  GROQ_API_KEY: $($envBlock['GROQ_API_KEY'].Substring(0, [Math]::Min(10, $envBlock['GROQ_API_KEY'].Length)))..."
+    }
+
     $backendProcess = Start-Process powershell -WorkingDirectory $BACKEND_DIR -ArgumentList `
-        "-NoExit", "-Command", `
-        "cd '$BACKEND_DIR'; mvn spring-boot:run" `
+        "-NoExit", "-Command", $runCommand `
         -PassThru -WindowStyle Normal
 
     Write-Step "Waiting for backend to start..."
-    $maxWait = 60
+    $maxWait = 90
     $waited = 0
     while ($waited -lt $maxWait) {
         Start-Sleep -Seconds 3
@@ -270,8 +374,8 @@ function Start-All {
         Install-Dependencies
     }
 
-    # Stop any existing processes
-    Stop-All
+    # Stop any existing processes - KILL PORTS FIRST
+    Kill-Ports
 
     # Start Backend
     $backendReady = Start-Backend

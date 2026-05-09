@@ -20,12 +20,21 @@ public class Lesson {
     private int orderIndex;
     private int durationMinutes;
     private Long courseId;
+    private boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    private User.Level level;
+
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public Lesson() {}
 
     @PrePersist
-    protected void onCreate() { createdAt = LocalDateTime.now(); }
+    protected void onCreate() { createdAt = LocalDateTime.now(); updatedAt = LocalDateTime.now(); }
+
+    @PreUpdate
+    protected void onUpdate() { updatedAt = LocalDateTime.now(); }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -41,5 +50,10 @@ public class Lesson {
     public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
     public Long getCourseId() { return courseId; }
     public void setCourseId(Long courseId) { this.courseId = courseId; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+    public User.Level getLevel() { return level; }
+    public void setLevel(User.Level level) { this.level = level; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

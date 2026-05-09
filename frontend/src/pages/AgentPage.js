@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { agentAPI } from '../api/api';
 import { toast } from 'react-toastify';
-import { Send, Sparkles, BookOpen, MessageCircle, Target, Loader } from 'lucide-react';
+import { Send, BookOpen, MessageCircle, Target } from 'lucide-react';
 
 const TABS = [
   { id: 'chat', label: '💬 AI Chat', icon: <MessageCircle size={16} /> },

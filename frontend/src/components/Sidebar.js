@@ -3,30 +3,40 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   BookOpen, Dumbbell, Bot, BarChart2, Map,
-  LayoutDashboard, ChevronLeft, ChevronRight,
-  Users, Settings, Shield, MessageCircle,
-  Sparkles, Trophy, Bell, Mic, Headphones, Star,
-  Target, Award, Calendar
+  LayoutDashboard,
+  Users, Shield, MessageCircle,
+  Sparkles, Trophy, Mic, Headphones,
+  Target, Award, Calendar, ChevronLeft, ChevronRight, GraduationCap
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/placement-test', icon: <Target size={20} />, label: 'Kiểm tra đầu vào', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/courses', icon: <BookOpen size={20} />, label: 'Khóa học', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
-  { to: '/daily', icon: <Calendar size={20} />, label: 'Thử thách hàng ngày', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
+  { to: '/daily-challenge', icon: <Calendar size={20} />, label: 'Thử thách hàng ngày', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
+  { to: '/flashcards', icon: <Sparkles size={20} />, label: 'Flashcards', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
+  { to: '/stories', icon: <BookOpen size={20} />, label: 'Story Mode', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/vocabulary', icon: <Sparkles size={20} />, label: 'Từ vựng', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/speaking', icon: <Mic size={20} />, label: 'Luyện nói', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/listening', icon: <Headphones size={20} />, label: 'Luyện nghe', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/exercises', icon: <Dumbbell size={20} />, label: 'Bài tập', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
+  { to: '/complete-test', icon: <Target size={20} />, label: 'Hệ thống thi', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
+  { to: '/ai-exercises', icon: <Sparkles size={20} />, label: 'Luyện tập AI', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/forum', icon: <MessageCircle size={20} />, label: 'Diễn đàn', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/agent', icon: <Bot size={20} />, label: 'AI Assistant', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/certificates', icon: <Award size={20} />, label: 'Chứng chỉ', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/gamification', icon: <Trophy size={20} />, label: 'Thành tựu', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/analytics', icon: <BarChart2 size={20} />, label: 'Thống kê học tập', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
   { to: '/learning-path', icon: <Map size={20} />, label: 'Lộ trình học', roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
-  { divider: true, label: 'QUẢN LÝ', roles: ['TEACHER', 'ADMIN'] },
-  { to: '/teacher', icon: <Settings size={20} />, label: 'Teacher Panel', roles: ['TEACHER', 'ADMIN'] },
-  { to: '/admin', icon: <Shield size={20} />, label: 'Admin Panel', roles: ['ADMIN'] },
+
+  // ── TEACHER SECTION ──
+  { divider: true, label: 'GIÁO VIÊN', roles: ['TEACHER', 'ADMIN'] },
+  { to: '/teacher', icon: <GraduationCap size={20} />, label: 'Tạo nội dung', roles: ['TEACHER', 'ADMIN'] },
+  { to: '/lesson-create', icon: <BookOpen size={20} />, label: 'Tạo bài học', roles: ['TEACHER', 'ADMIN'] },
+
+  // ── ADMIN SECTION ──
+  { divider: true, label: 'QUẢN TRỊ', roles: ['ADMIN'] },
+  { to: '/admin', icon: <Shield size={20} />, label: 'Dashboard', roles: ['ADMIN'] },
   { to: '/admin/users', icon: <Users size={20} />, label: 'Quản lý Users', roles: ['ADMIN'] },
 ];
 
@@ -59,7 +69,7 @@ export default function Sidebar({ open, onToggle }) {
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: open ? 'space-between' : 'center',
-        padding: open ? '20px 16px 16px' : '20px 0 16px',
+        padding: open ? '20px 12px 16px' : '20px 0 16px',
         borderBottom: '2px solid rgba(253,188,180,0.15)',
         minHeight: 72,
         flexShrink: 0,
@@ -81,14 +91,14 @@ export default function Sidebar({ open, onToggle }) {
         <button
           onClick={onToggle}
           style={{
-            width: 32, height: 32, borderRadius: 10, border: 'none',
+            width: 28, height: 28, borderRadius: 8, border: 'none',
             background: 'rgba(34,197,94,0.1)', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#22C55E', flexShrink: 0, transition: 'background 0.2s',
           }}
           title={open ? 'Thu gọn' : 'Mở rộng'}
         >
-          {open ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          {open ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
         </button>
       </div>
 
@@ -166,8 +176,8 @@ export default function Sidebar({ open, onToggle }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: '0.72rem', color: '#718096', fontWeight: 600 }}>{user.role}</span>
                 <span style={{
-                  background: '#22C55E', color: 'white',
-                  fontSize: '0.65rem', fontWeight: 800,
+                  background: role === 'ADMIN' ? '#ef4444' : role === 'TEACHER' ? '#3b82f6' : '#22C55E',
+                  color: 'white', fontSize: '0.65rem', fontWeight: 800,
                   padding: '1px 6px', borderRadius: 6
                 }}>{user.level}</span>
               </div>

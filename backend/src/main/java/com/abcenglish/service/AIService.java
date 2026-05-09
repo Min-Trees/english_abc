@@ -5,19 +5,27 @@ import com.abcenglish.repository.AIChatHistoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.*;
 
 @Service
+@PropertySource(value = "file:./.env", ignoreResourceNotFound = true)
+@PropertySource(value = "../.env", ignoreResourceNotFound = true)
 public class AIService {
 
     private static final Logger log = LoggerFactory.getLogger(AIService.class);
+    private static final Duration AI_TIMEOUT = Duration.ofSeconds(30);
 
     private final AIChatHistoryRepository chatHistoryRepository;
+    private final WebClient groqWebClient;
 
     @Value("${groq.api.key:your_groq_api_key_here}")
     private String groqApiKey;
@@ -25,27 +33,40 @@ public class AIService {
     @Value("${groq.api.model:llama-3.1-8b-instant}")
     private String groqModel;
 
-    private final WebClient.Builder webClientBuilder;
-
     public AIService(AIChatHistoryRepository chatHistoryRepository, WebClient.Builder webClientBuilder) {
         this.chatHistoryRepository = chatHistoryRepository;
-        this.webClientBuilder = webClientBuilder;
+        this.groqWebClient = webClientBuilder.baseUrl("https://api.groq.com")
+                .defaultHeader("Content-Type", "application/json")
+                .build();
+    }
+
+    private String getEffectiveApiKey() {
+        if (groqApiKey == null || groqApiKey.isEmpty() || groqApiKey.equals("your_groq_api_key_here")) {
+            log.error("GROQ_API_KEY is not configured or has default value!");
+            log.warn("Please set GROQ_API_KEY in .env file or application.properties");
+        } else {
+            log.info("GROQ_API_KEY is configured (length: {})", groqApiKey.length());
+        }
+        return groqApiKey;
+    }
+
+    private WebClient getConfiguredWebClient() {
+        String key = getEffectiveApiKey();
+        return groqWebClient.mutate()
+                .defaultHeader("Authorization", "Bearer " + key)
+                .build();
     }
 
     public String chat(String userMessage, Long userId) {
         try {
-            if (groqApiKey == null || groqApiKey.isEmpty() ||
-                groqApiKey.equals("your_groq_api_key_here")) {
-                return "AI Tutor chua duoc cau hinh. Vui long dat GROQ_API_KEY trong docker-compose.yml hoac .env file. " +
-                       "Ban co the lay API key mien phi tai https://console.groq.com/keys";
+            String effectiveKey = getEffectiveApiKey();
+            if (effectiveKey == null || effectiveKey.isEmpty() ||
+                effectiveKey.equals("your_groq_api_key_here")) {
+                return "AI Tutor chưa được cấu hình. Vui lòng đặt GROQ_API_KEY trong docker-compose.yml hoặc .env file. " +
+                       "Bạn có thể lấy API key miễn phí tại https://console.groq.com/keys";
             }
 
             log.info("Using Groq API with model: {}", groqModel);
-
-            WebClient webClient = webClientBuilder.baseUrl("https://api.groq.com")
-                    .defaultHeader("Authorization", "Bearer " + groqApiKey)
-                    .defaultHeader("Content-Type", "application/json")
-                    .build();
 
             // Build messages
             List<Map<String, Object>> messages = new ArrayList<>();
@@ -80,12 +101,18 @@ public class AIService {
 
             log.info("Sending request to Groq API...");
 
-            Map<String, Object> response = webClient.post()
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = getConfiguredWebClient().post()
                     .uri("/openai/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
+                    .timeout(AI_TIMEOUT)
+                    .onErrorResume(e -> {
+                        log.error("AI API timeout or error: {}", e.getMessage());
+                        return Mono.error(new RuntimeException("AI service unavailable: " + e.getMessage()));
+                    })
                     .block();
 
             log.info("Received response from Groq API");
@@ -109,20 +136,23 @@ public class AIService {
                     return aiResponse;
                 }
             }
-            return "Xin loi, toi khong the tra loi luc nay.";
+            return "Xin lỗi, tôi không thể trả lời lúc này.";
         } catch (WebClientResponseException e) {
             log.error("Groq API error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
-            return "Loi tu Groq API: " + e.getStatusCode() + " - " + e.getMessage();
+            return "Lỗi từ Groq API: " + e.getStatusCode() + " - " + e.getMessage();
         } catch (Exception e) {
             log.error("Error in AI chat: ", e);
             String errorMsg = e.getMessage();
             if (errorMsg != null && errorMsg.contains("401")) {
-                return "Loi xac thuc AI. Vui long kiem tra GROQ_API_KEY trong cau hinh.";
+                return "Lỗi xác thực AI. Vui lòng kiểm tra GROQ_API_KEY trong cấu hình.";
             }
             if (errorMsg != null && errorMsg.contains("400")) {
-                return "Loi cu phap request. Vui long thu lai.";
+                return "Lỗi cú pháp request. Vui lòng thử lại.";
             }
-            return "Da xay ra loi: " + errorMsg;
+            if (errorMsg != null && errorMsg.contains("timeout")) {
+                return "AI mất quá lâu để phản hồi. Vui lòng thử lại.";
+            }
+            return "Đã xảy ra lỗi: " + errorMsg;
         }
     }
 }

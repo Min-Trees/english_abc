@@ -53,22 +53,22 @@ export default function RegisterPage() {
 
   return (
     <div style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div className="clay-card" style={{ padding: 48, width: '100%', maxWidth: 480 }}>
+      <div className="clay-card" style={{ padding: 40, width: '100%', maxWidth: 480 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 70, height: 70, borderRadius: 22,
-            background: 'linear-gradient(135deg, #ADD8E6, #22C55E)',
+            width: 80, height: 80, borderRadius: 28,
+            background: 'linear-gradient(135deg, #FDBCB4, #22C55E)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 8px 24px rgba(173,216,230,0.5)',
+            margin: '0 auto 20px',
+            boxShadow: '0 12px 32px rgba(253, 188, 180, 0.5)',
           }}>
-            <BookOpen size={32} color="white" />
+            <BookOpen size={36} color="white" />
           </div>
-          <h1 style={{ fontWeight: 900, fontSize: '1.8rem', color: '#1a202c' }}>
-            {step === 1 ? 'Tạo tài khoản' : 'Nhóm tuổi của bạn'}
+          <h1 style={{ fontWeight: 900, fontSize: '2rem', color: '#1a202c', marginBottom: 8 }}>
+            {step === 1 ? 'Tạo tài khoản mới' : 'Chọn nhóm tuổi của bạn'}
           </h1>
-          <p style={{ color: '#718096', fontWeight: 600, marginTop: 8 }}>
-            {step === 1 ? 'Bắt đầu hành trình học tiếng Anh' : 'Giúp chúng tôi cá nhân hóa nội dung cho bạn'}
+          <p style={{ color: '#718096', fontWeight: 600 }}>
+            {step === 1 ? 'Bắt đầu hành trình học tiếng Anh ngay hôm nay' : 'Giúp chúng tôi cá nhân hóa nội dung cho bạn'}
           </p>
         </div>
 

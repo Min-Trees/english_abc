@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Trophy, Zap, Flame, Star, Medal, ChevronRight, Crown } from 'lucide-react';
+import { Trophy, Flame, Medal, ChevronRight, Crown } from 'lucide-react';
 
 const LEVEL_COLORS = {
   A1: '#22C55E', A2: '#3B82F6', B1: '#8B5CF6', B2: '#F59E0B', C1: '#EF4444'

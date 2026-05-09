@@ -23,19 +23,19 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div className="clay-card" style={{ padding: 48, width: '100%', maxWidth: 440 }}>
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+      <div className="clay-card" style={{ padding: 40, width: '100%', maxWidth: 460 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 70, height: 70, borderRadius: 22,
+            width: 80, height: 80, borderRadius: 28,
             background: 'linear-gradient(135deg, #FDBCB4, #22C55E)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 8px 24px rgba(253,188,180,0.5)',
+            margin: '0 auto 20px',
+            boxShadow: '0 12px 32px rgba(253, 188, 180, 0.5)',
           }}>
-            <BookOpen size={32} color="white" />
+            <BookOpen size={36} color="white" />
           </div>
-          <h1 style={{ fontWeight: 900, fontSize: '1.8rem', color: '#1a202c' }}>Chào mừng trở lại!</h1>
-          <p style={{ color: '#718096', fontWeight: 600, marginTop: 8 }}>Đăng nhập vào ABC English</p>
+          <h1 style={{ fontWeight: 900, fontSize: '2rem', color: '#1a202c', marginBottom: 8 }}>Chào mừng trở lại!</h1>
+          <p style={{ color: '#718096', fontWeight: 600 }}>Đăng nhập để tiếp tục hành trình học tiếng Anh</p>
         </div>
 
         <form onSubmit={handleSubmit}>

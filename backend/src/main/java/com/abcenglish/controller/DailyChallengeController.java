@@ -1,123 +1,151 @@
 package com.abcenglish.controller;
 
+import com.abcenglish.dto.ApiResponse;
+import com.abcenglish.service.DailyChallengeService;
+import com.abcenglish.service.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/daily")
 @CrossOrigin(origins = "*")
+@Slf4j
 public class DailyChallengeController {
 
-    @GetMapping
-    public ResponseEntity<Map<String, Object>> getTodayChallenge(
-            @RequestHeader(value = "Authorization", required = false) String authHeader
-    ) {
-        Map<String, Object> challenge = new HashMap<>();
-        challenge.put("challengeId", UUID.randomUUID().toString());
-        challenge.put("type", getChallengeTypeForDay());
-        challenge.put("title", getChallengeTitle());
-        challenge.put("description", getChallengeDescription());
-        challenge.put("xpReward", 50);
-        challenge.put("targetGoal", 10);
-        challenge.put("progress", Map.of("current", 0, "completed", false));
-        challenge.put("content", Map.of(
-            "questions", getSampleQuestions()
-        ));
-        challenge.put("difficulty", "MEDIUM");
-        challenge.put("available", true);
-        return ResponseEntity.ok(challenge);
+    private final DailyChallengeService dailyChallengeService;
+    private final JwtService jwtService;
+
+    public DailyChallengeController(DailyChallengeService dailyChallengeService, JwtService jwtService) {
+        this.dailyChallengeService = dailyChallengeService;
+        this.jwtService = jwtService;
     }
 
-    @GetMapping("/week")
-    public ResponseEntity<List<Map<String, Object>>> getWeeklyProgress() {
-        List<Map<String, Object>> weekProgress = new ArrayList<>();
-        LocalDate today = LocalDate.now();
-        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-
-        for (int i = 0; i < 7; i++) {
-            LocalDate day = monday.plusDays(i);
-            Map<String, Object> dayData = new HashMap<>();
-            dayData.put("date", day.toString());
-            dayData.put("dayOfWeek", day.getDayOfWeek().toString());
-            dayData.put("challengeType", getChallengeTypeForDate(day));
-            dayData.put("completed", day.isBefore(today) || day.isEqual(today));
-            dayData.put("score", day.isBefore(today) || day.isEqual(today) ? 100 : 0);
-            weekProgress.add(dayData);
+    private Long extractUserId(HttpServletRequest request) {
+        Long userId = jwtService.extractUserId(request);
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                userId = jwtService.extractUserIdFromToken(authHeader.substring(7));
+            }
         }
-        return ResponseEntity.ok(weekProgress);
+        return userId;
     }
 
-    @PostMapping("/complete")
-    public ResponseEntity<Map<String, Object>> completeChallenge(
-            @RequestBody Map<String, Object> data,
-            @RequestHeader(value = "Authorization", required = false) String authHeader
+    /**
+     * GET /api/daily
+     * Get today's full daily challenge with all 4 sections
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getTodayChallenge(HttpServletRequest request) {
+        try {
+            Long userId = extractUserId(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Authentication required"));
+            }
+
+            log.info("Getting today's challenge for userId={}", userId);
+            Map<String, Object> challenge = dailyChallengeService.getTodayChallenge(userId);
+            return ResponseEntity.ok(ApiResponse.ok(challenge));
+        } catch (Exception e) {
+            log.error("Error getting today's challenge: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("Không thể lấy thử thách: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * POST /api/daily/submit
+     * Submit challenge answers and get graded results
+     */
+    @PostMapping("/submit")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> submitChallenge(
+            @RequestBody Map<String, Object> submissionData,
+            HttpServletRequest request
     ) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("xpEarned", 50);
-        result.put("streakUpdated", true);
-        result.put("newStreak", 1);
-        return ResponseEntity.ok(result);
+        try {
+            Long userId = extractUserId(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Authentication required"));
+            }
+
+            log.info("Submitting challenge for userId={}", userId);
+            Map<String, Object> result = dailyChallengeService.submitChallenge(userId, submissionData);
+
+            if (Boolean.TRUE.equals(result.get("alreadyCompleted"))) {
+                return ResponseEntity.ok(ApiResponse.ok(result));
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok(result));
+        } catch (Exception e) {
+            log.error("Error submitting challenge: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("Không thể nộp bài: " + e.getMessage()));
+        }
     }
 
-    private String getChallengeTypeForDay() {
-        DayOfWeek today = LocalDate.now().getDayOfWeek();
-        return switch (today) {
-            case MONDAY -> "VOCAB_QUIZ";
-            case TUESDAY -> "LISTENING";
-            case WEDNESDAY -> "GRAMMAR_SPRINT";
-            case THURSDAY -> "SPEAKING_SHADOWING";
-            case FRIDAY -> "READING_SPEED";
-            case SATURDAY, SUNDAY -> "MIXED";
-        };
+    /**
+     * GET /api/daily/week
+     * Get weekly progress (Mon-Sun)
+     */
+    @GetMapping("/week")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getWeeklyProgress(HttpServletRequest request) {
+        try {
+            Long userId = extractUserId(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Authentication required"));
+            }
+
+            List<Map<String, Object>> weeklyProgress = dailyChallengeService.getWeeklyProgress(userId);
+            return ResponseEntity.ok(ApiResponse.ok(weeklyProgress));
+        } catch (Exception e) {
+            log.error("Error getting weekly progress: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("Không thể lấy tiến độ tuần: " + e.getMessage()));
+        }
     }
 
-    private String getChallengeTypeForDate(LocalDate date) {
-        DayOfWeek day = date.getDayOfWeek();
-        return switch (day) {
-            case MONDAY -> "VOCAB_QUIZ";
-            case TUESDAY -> "LISTENING";
-            case WEDNESDAY -> "GRAMMAR_SPRINT";
-            case THURSDAY -> "SPEAKING_SHADOWING";
-            case FRIDAY -> "READING_SPEED";
-            case SATURDAY, SUNDAY -> "MIXED";
-        };
+    /**
+     * GET /api/daily/streak
+     * Get current streak info
+     */
+    @GetMapping("/streak")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStreak(HttpServletRequest request) {
+        try {
+            Long userId = extractUserId(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Authentication required"));
+            }
+
+            Map<String, Object> streakInfo = dailyChallengeService.getStreakInfo(userId);
+            return ResponseEntity.ok(ApiResponse.ok(streakInfo));
+        } catch (Exception e) {
+            log.error("Error getting streak: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("Không thể lấy streak: " + e.getMessage()));
+        }
     }
 
-    private String getChallengeTitle() {
-        return switch (getChallengeTypeForDay()) {
-            case "VOCAB_QUIZ" -> "Bài tập từ vựng";
-            case "LISTENING" -> "Luyện nghe";
-            case "GRAMMAR_SPRINT" -> "Ngữ pháp nhanh";
-            case "SPEAKING_SHADOWING" -> "Shadowing Speaking";
-            case "READING_SPEED" -> "Đọc nhanh";
-            default -> "Thử thách hỗn hợp";
-        };
-    }
+    /**
+     * GET /api/daily/history
+     * Get challenge history
+     */
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getHistory(
+            @RequestParam(defaultValue = "10") int limit,
+            HttpServletRequest request
+    ) {
+        try {
+            Long userId = extractUserId(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Authentication required"));
+            }
 
-    private String getChallengeDescription() {
-        return switch (getChallengeTypeForDay()) {
-            case "VOCAB_QUIZ" -> "Hoàn thành quiz từ vựng hôm nay để nhận XP!";
-            case "LISTENING" -> "Luyện kỹ năng nghe với các bài học thú vị.";
-            case "GRAMMAR_SPRINT" -> "Kiểm tra ngữ pháp trong 5 phút!";
-            case "SPEAKING_SHADOWING" -> "Luyện phát âm theo câu mẫu.";
-            case "READING_SPEED" -> "Đọc và hiểu nhanh các đoạn văn.";
-            default -> "Hoàn thành các thử thách khác nhau mỗi ngày!";
-        };
-    }
-
-    private List<Map<String, String>> getSampleQuestions() {
-        List<Map<String, String>> questions = new ArrayList<>();
-        questions.add(Map.of("word", "Beautiful", "translation", "Đẹp"));
-        questions.add(Map.of("word", "Happiness", "translation", "Hạnh phúc"));
-        questions.add(Map.of("word", "Knowledge", "translation", "Kiến thức"));
-        questions.add(Map.of("word", "Adventure", "translation", "Cuộc phiêu lưu"));
-        questions.add(Map.of("word", "Remember", "translation", "Nhớ"));
-        return questions;
+            List<Map<String, Object>> history = dailyChallengeService.getChallengeHistory(userId, limit);
+            return ResponseEntity.ok(ApiResponse.ok(history));
+        } catch (Exception e) {
+            log.error("Error getting history: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("Không thể lấy lịch sử: " + e.getMessage()));
+        }
     }
 }

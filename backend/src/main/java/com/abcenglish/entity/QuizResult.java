@@ -40,4 +40,5 @@ public class QuizResult {
     public String getQuizType() { return quizType; }
     public void setQuizType(String quizType) { this.quizType = quizType; }
     public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
 }

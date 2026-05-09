@@ -36,6 +36,12 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Forum reputation
+    private Integer forumReputation = 0;
+    private Integer forumPosts = 0;
+    private Integer forumAnswers = 0;
+    private Integer acceptedAnswers = 0;
+
     public User() {}
 
     public User(String username, String email, String password) {
@@ -78,6 +84,14 @@ public class User {
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public int getForumReputation() { return forumReputation != null ? forumReputation : 0; }
+    public void setForumReputation(int forumReputation) { this.forumReputation = forumReputation; }
+    public int getForumPosts() { return forumPosts != null ? forumPosts : 0; }
+    public void setForumPosts(int forumPosts) { this.forumPosts = forumPosts; }
+    public int getForumAnswers() { return forumAnswers != null ? forumAnswers : 0; }
+    public void setForumAnswers(int forumAnswers) { this.forumAnswers = forumAnswers; }
+    public int getAcceptedAnswers() { return acceptedAnswers != null ? acceptedAnswers : 0; }
+    public void setAcceptedAnswers(int acceptedAnswers) { this.acceptedAnswers = acceptedAnswers; }
 
     public enum AgeGroup { KID, TEEN, ADULT }
     public enum Role { STUDENT, TEACHER, ADMIN }

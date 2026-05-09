@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { authAPI } from '../api/api';
 
 const AuthContext = createContext(null);
@@ -13,11 +13,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     setLoading(true);
     try {
-      const { data } = await authAPI.login(credentials);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data));
-      setUser(data);
-      return data;
+      const { data: responseData } = await authAPI.login(credentials);
+      const authData = responseData.data; // AuthResponse is wrapped in responseData.data
+      localStorage.setItem('token', authData.token);
+      localStorage.setItem('user', JSON.stringify(authData));
+      setUser(authData);
+      return authData;
     } finally {
       setLoading(false);
     }
@@ -25,9 +26,10 @@ export const AuthProvider = ({ children }) => {
 
   // Handle social login (Google/Facebook callback)
   const handleSocialLogin = (data) => {
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data));
-    setUser(data);
+    const authData = data.data || data; // Support both wrapped and unwrapped responses
+    localStorage.setItem('token', authData.token);
+    localStorage.setItem('user', JSON.stringify(authData));
+    setUser(authData);
   };
 
   const register = async (userData) => {

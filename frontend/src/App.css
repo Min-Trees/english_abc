@@ -39,6 +39,11 @@ a { text-decoration: none; color: inherit; }
 
 .main-content { flex: 1; }
 
+.app-with-sidebar {
+  display: flex;
+  min-height: 100vh;
+}
+
 /* ============= Navbar ============= */
 .navbar {
   display: flex;
@@ -574,7 +579,23 @@ a { text-decoration: none; color: inherit; }
 
 .footer p { margin: 0.25rem 0; }
 
-/* ============= Responsive ============= */
+/* ============= Sidebar Layout ============= */
+.app-with-sidebar {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ============= Animations ============= */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
 @media (max-width: 768px) {
   .navbar { padding: 0 1rem; }
   .navbar-links { gap: 0.75rem; }

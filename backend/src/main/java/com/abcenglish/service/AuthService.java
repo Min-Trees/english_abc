@@ -27,6 +27,22 @@ public class AuthService {
     public Map<String, Object> register(RegisterRequest request) {
         Map<String, Object> result = new HashMap<String, Object>();
 
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            result.put("success", false);
+            result.put("message", "Username is required");
+            return result;
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            result.put("success", false);
+            result.put("message", "Password is required");
+            return result;
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            result.put("success", false);
+            result.put("message", "Email is required");
+            return result;
+        }
+
         if (userRepository.existsByUsername(request.getUsername())) {
             result.put("success", false);
             result.put("message", "Username already exists");
@@ -55,7 +71,9 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String token = jwtService.generateToken(user.getUsername());
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("userId", user.getId());
+        String token = jwtService.generateToken(extraClaims, user.getUsername());
         AuthResponse authResponse = new AuthResponse(
                 token, user.getId(), user.getUsername(),
                 user.getEmail(), user.getRole().name(), user.getFullName()
@@ -77,7 +95,9 @@ public class AuthService {
             return result;
         }
 
-        String token = jwtService.generateToken(user.getUsername());
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("userId", user.getId());
+        String token = jwtService.generateToken(extraClaims, user.getUsername());
         AuthResponse authResponse = new AuthResponse(
                 token, user.getId(), user.getUsername(),
                 user.getEmail(), user.getRole().name(), user.getFullName()

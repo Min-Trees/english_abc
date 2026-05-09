@@ -15,8 +15,9 @@ export default function CoursesPage() {
 
   useEffect(() => {
     courseAPI.getAll().then(r => {
-      setCourses(r.data);
-      setFiltered(r.data);
+      const data = Array.isArray(r.data) ? r.data : (r.data?.data || []);
+      setCourses(data);
+      setFiltered(data);
     }).catch(() => {
       // Fallback demo data
       const demo = [

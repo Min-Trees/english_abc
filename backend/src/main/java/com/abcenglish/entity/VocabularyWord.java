@@ -33,6 +33,7 @@ public class VocabularyWord {
     private int timesReviewed;
     private int timesCorrect;
     private LocalDateTime createdAt;
+    private Long createdBy;
 
     public VocabularyWord() {}
 
@@ -68,4 +69,7 @@ public class VocabularyWord {
     public int getTimesCorrect() { return timesCorrect; }
     public void setTimesCorrect(int timesCorrect) { this.timesCorrect = timesCorrect; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Long getCreatedBy() { return createdBy; }
+    public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
 }
